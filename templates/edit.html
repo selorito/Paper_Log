@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if slug else 'New note' }} · Paper Log{% endblock %}
+{% block content %}
+<h1>{{ 'Edit note' if slug else 'New paper note' }}</h1>
+
+{% if not slug %}
+<form class="inline card" action="{{ url_for('new') }}" method="get">
+  <input name="arxiv" placeholder="Paste an arXiv link or ID to auto-fill" value="">
+  <button class="btn ghost">Fetch</button>
+</form>
+{% endif %}
+
+{% if note.abstract %}
+<details class="card abstract" open>
+  <summary>Abstract</summary>
+  <p>{{ note.abstract }}</p>
+  <p><a href="{{ note.url }}" target="_blank" rel="noopener">Open on arXiv ↗</a></p>
+</details>
+{% endif %}
+
+<form method="post" class="note-form">
+  <div class="grid">
+    <label class="span2">Title<input name="title" value="{{ note.title or '' }}" required></label>
+    <label class="span2">Paper URL<input name="url" type="url" value="{{ note.url or '' }}"></label>
+    <label class="span2">Authors<input name="authors" value="{{ note.authors or '' }}"></label>
+    <label>Area
+      <select name="area">
+        {% for a in areas %}<option {% if note.area == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Date read<input name="date" type="date" value="{{ note.date or '' }}"></label>
+    <div class="field">Rating
+      <span class="rating">
+        {% for i in range(5, 0, -1) %}
+          <input type="radio" id="r{{ i }}" name="rating" value="{{ i }}" {% if (note.rating or '3')|string == i|string %}checked{% endif %}><label for="r{{ i }}" title="{{ i }}/5">★</label>
+        {% endfor %}
+      </span>
+    </div>
+    <label>Tags <span class="muted">(comma separated)</span><input name="tags" value="{{ note.tags or '' }}" placeholder="diffusion, vit"></label>
+  </div>
+
+  {% set hints = {
+    'tldr': 'One or two sentences. What would you tell a friend?',
+    'problem': 'What problem does it solve and why does it matter?',
+    'method': 'Key idea / architecture / training trick.',
+    'results': 'Main numbers, datasets, baselines beaten.',
+    'strengths': 'What is genuinely good about it?',
+    'weaknesses': 'Limitations, missing ablations, doubtful claims.',
+    'my_take': 'Your own opinion — would you use it? What would you try next?',
+    'questions': 'Things you did not understand or want to look up.'
+  } %}
+  {% for key, heading in sections %}
+    <label class="section">{{ heading }}
+      <textarea name="{{ key }}" rows="{{ 2 if key == 'tldr' else 4 }}" placeholder="{{ hints[key] }}">{{ note[key] or '' }}</textarea>
+    </label>
+  {% endfor %}
+
+  <div class="actions">
+    <button class="btn">Save note</button>
+    <a class="btn ghost" href="{{ url_for('view', slug=slug) if slug else url_for('index') }}">Cancel</a>
+  </div>
+</form>
+{% endblock %}

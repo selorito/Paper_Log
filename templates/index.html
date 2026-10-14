@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero card">
+  {% if done_today %}
+    <h1>✅ Today's paper is done</h1>
+    <p class="muted">Streak: <b>{{ streak }}</b> day{{ '' if streak == 1 else 's' }} · Papers read: <b>{{ total }}</b>. No more reminder emails today.</p>
+  {% else %}
+    <h1>📖 You haven't read today's paper yet</h1>
+    <p class="muted">
+      {% if streak %}Keep your <b>{{ streak }}-day</b> streak alive.{% else %}Start a new streak today.{% endif %}
+      Papers read: <b>{{ total }}</b>.
+    </p>
+  {% endif %}
+
+  <form class="inline" action="{{ url_for('new') }}" method="get">
+    <input name="arxiv" placeholder="Paste an arXiv link or ID (e.g. 2410.12345)" required>
+    <button class="btn">Start note</button>
+  </form>
+
+  <div class="calendar" aria-label="Reading calendar, last 12 weeks">
+    {% for col in calendar %}
+      <div class="week">
+        {% for d in col %}<span class="day {% if d.read %}read{% endif %} {% if d.future %}future{% endif %}" title="{{ d.date }}"></span>{% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="git-row">
+    {% if has_remote %}
+      <span class="muted">{{ unpushed }} commit{{ '' if unpushed == 1 else 's' }} not on GitHub yet</span>
+      <form action="{{ url_for('push') }}" method="post"><button class="btn ghost small" {% if not unpushed %}disabled{% endif %}>Push to GitHub</button></form>
+    {% else %}
+      <span class="muted">No GitHub repo connected yet — see SETUP.md.</span>
+    {% endif %}
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>Suggestions for today</h2>
+    <a class="muted" href="{{ url_for('index', refresh=1) }}">↻ refresh</a>
+  </div>
+  {% if sugg.errors %}<div class="flash error">Some sources failed: {{ sugg.errors|join('; ') }}</div>{% endif %}
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="hf">🤗 Trending</button>
+    <button class="tab" data-tab="cv">👁️ New in CV</button>
+    <button class="tab" data-tab="nlp">💬 New in NLP</button>
+  </div>
+  {% for key in ['hf', 'cv', 'nlp'] %}
+    <div class="panel {% if key == 'hf' %}active{% endif %}" data-panel="{{ key }}">
+      {% for p in sugg[key] %}
+        <article class="paper card">
+          <div class="paper-head">
+            <a class="title" href="{{ p.url }}" target="_blank" rel="noopener">{{ p.title }}</a>
+            {% if p.upvotes is defined %}<span class="pill">▲ {{ p.upvotes }}</span>{% endif %}
+            {% if p.area %}<span class="pill">{{ p.area }}</span>{% endif %}
+          </div>
+          <p class="authors muted">{{ p.authors|truncate(120) }}</p>
+          <details><summary>Abstract</summary><p>{{ p.summary }}</p></details>
+          <div class="actions">
+            <a class="btn small" href="{{ url_for('new', arxiv=p.id, area=('CV' if key == 'cv' else 'NLP' if key == 'nlp' else '')) }}">Read this one →</a>
+            <a class="btn ghost small" href="https://arxiv.org/pdf/{{ p.id }}" target="_blank" rel="noopener">PDF</a>
+          </div>
+        </article>
+      {% else %}
+        <p class="muted">Nothing here right now.</p>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</section>
+
+{% if recent %}
+<section>
+  <div class="section-head"><h2>Recent notes</h2><a class="muted" href="{{ url_for('notes') }}">all →</a></div>
+  {% for n in recent %}
+    <a class="row card" href="{{ url_for('view', slug=n.slug) }}">
+      <span class="muted mono">{{ n.date }}</span>
+      <span class="grow">{{ n.title }}</span>
+      <span class="pill">{{ n.area }}</span>
+      <span class="stars">{{ '★' * (n.rating|int) }}</span>
+    </a>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === t.dataset.tab));
+  }));
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}All notes · Paper Log{% endblock %}
+{% block content %}
+<h1>All notes <span class="muted">({{ notes|length }})</span></h1>
+<form class="inline" method="get">
+  <input name="q" value="{{ q }}" placeholder="Search notes…">
+  <select name="area" onchange="this.form.submit()">
+    <option value="">All areas</option>
+    {% for a in areas %}<option {% if area == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
+  </select>
+  <button class="btn ghost">Search</button>
+</form>
+{% for n in notes %}
+  <a class="row card" href="{{ url_for('view', slug=n.slug) }}">
+    <span class="muted mono">{{ n.date }}</span>
+    <span class="grow">{{ n.title }}{% if n.tldr %}<br><small class="muted">{{ n.tldr|truncate(140) }}</small>{% endif %}</span>
+    <span class="pill">{{ n.area }}</span>
+    <span class="stars">{{ '★' * (n.rating|int) }}</span>
+  </a>
+{% else %}
+  <p class="muted">No notes yet. <a href="{{ url_for('index') }}">Pick today's paper →</a></p>
+{% endfor %}
+{% endblock %}

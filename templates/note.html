@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ note.title }} · Paper Log{% endblock %}
+{% block content %}
+<article class="note">
+  <p class="muted mono">{{ note.date }} · <span class="pill">{{ note.area }}</span> <span class="stars">{{ '★' * (note.rating|int) }}{{ '☆' * (5 - note.rating|int) }}</span></p>
+  <h1>{{ note.title }}</h1>
+  {% if note.authors %}<p class="muted">{{ note.authors }}</p>{% endif %}
+  <p class="actions">
+    {% if note.url %}<a class="btn ghost small" href="{{ note.url }}" target="_blank" rel="noopener">Paper ↗</a>{% endif %}
+    <a class="btn ghost small" href="{{ url_for('edit', slug=note.slug) }}">Edit</a>
+  </p>
+  {% if note.tags %}<p>{% for t in note.tags.split(',') if t.strip() %}<span class="pill">{{ t.strip() }}</span> {% endfor %}</p>{% endif %}
+
+  {% for key, heading in sections if note[key] %}
+    <h2>{{ heading }}</h2>
+    <p class="body">{{ note[key] }}</p>
+  {% endfor %}
+</article>
+
+<section class="card share">
+  <div class="section-head">
+    <h2>LinkedIn post draft</h2>
+    <button class="btn small" id="copy">Copy</button>
+  </div>
+  <p class="muted">Edit it freely before posting — your own words read best.</p>
+  <textarea id="draft" rows="16">{{ draft }}</textarea>
+  <p class="muted"><span id="count"></span> / 3000 characters</p>
+</section>
+
+<form action="{{ url_for('delete', slug=note.slug) }}" method="post" onsubmit="return confirm('Delete this note?')">
+  <button class="btn danger small">Delete note</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const d = document.getElementById('draft'), c = document.getElementById('count');
+  const upd = () => c.textContent = d.value.length; upd(); d.addEventListener('input', upd);
+  document.getElementById('copy').addEventListener('click', async e => {
+    try { await navigator.clipboard.writeText(d.value); } catch { d.select(); document.execCommand('copy'); }
+    e.target.textContent = 'Copied ✓'; setTimeout(() => e.target.textContent = 'Copy', 1500);
+  });
+</script>
+{% endblock %}
